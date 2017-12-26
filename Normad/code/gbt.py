@@ -6,7 +6,7 @@ import sys
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 # import tensorflow as tf
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor
 
 # Input data files are available in the "../input/" directory.
 # For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
@@ -20,21 +20,25 @@ from sklearn.model_selection import train_test_split
 
 t1 = 'formation_energy_ev_natom'
 t2 = 'bandgap_energy_ev'
-    
-def Linear_train(X_t, X_v, y1_t, y1_v, y2_t, y2_v, max_depth=3, n_trees=8, n_steps=1000, learn_rate=.1):
-    np.random.seed(1)
-    print X_t.corr()
 
-    clf=LinearRegression()
-    y_t=np.concatenate((y1_t,y2_t), axis=1)
-    y_v=np.concatenate((y1_v,y2_v), axis=1)
-    clf.fit(X_t,np.array(y_t))
+    
+def GBT_train(X_t, X_v, y1_t, y1_v, y2_t, y2_v, max_depth=3, n_trees=8, n_steps=1000, learn_rate=.1):
+
+    np.random.seed(1)
+
+    loss='lad'
+    clf1=GradientBoostingRegressor(loss=loss,n_estimators=n_steps, max_depth=max_depth,
+                                    learning_rate=learn_rate)
+    clf1.fit(X_t,y1_t)
+    print(clf1.feature_importances_)
+    clf2=GradientBoostingRegressor(loss=loss,n_estimators=n_steps, max_depth=max_depth,
+                                    learning_rate=learn_rate)
+    clf2.fit(X_t,y2_t)
+    print(clf2.feature_importances_)
 
     if y1_v.shape[0] != 0:
-        y_out=clf.predict(X_v)
-        y1_out=y_out[:,0]
-        y2_out=y_out[:,1]
-        print clf.score(X_v,y_v)
+        y1_out=clf1.predict(X_v)
+        y2_out=clf2.predict(X_v)
         loss1=np.sqrt(np.mean(np.square(np.log(y1_out + 1) - np.log(y1_v+1))))
         loss2=np.sqrt(np.mean(np.square(np.log(y2_out + 1) - np.log(y2_v+1))))
         return np.mean([loss1,loss2])
@@ -53,7 +57,7 @@ def Linear_train(X_t, X_v, y1_t, y1_v, y2_t, y2_v, max_depth=3, n_trees=8, n_ste
 
 def cross_validation(train, validation_part, cv_folds, learn_rate):
     # cv_folds=3
-    exit()
+    
     my_loss=[]
     for i in range(cv_folds):
         X_train, X_validation = train_test_split(train, test_size=validation_part)
@@ -69,7 +73,7 @@ def cross_validation(train, validation_part, cv_folds, learn_rate):
         # print(X_train.shape, y1_train.shape, y2_train.shape)
         # print(X_validation.shape, y1_validation.shape, y2_validation.shape)
 
-        loss_tmp = Linear_train(X_train, X_validation, y1_train, y1_validation, y2_train, y2_validation, learn_rate=learn_rate)
+        loss_tmp = GBT_train(X_train, X_validation, y1_train, y1_validation, y2_train, y2_validation, learn_rate=learn_rate)
         my_loss.append(loss_tmp)
     m=np.mean(my_loss)
     s=np.std(my_loss)
@@ -83,6 +87,7 @@ def cross_validation(train, validation_part, cv_folds, learn_rate):
 
 
 train=train.drop(['id'],axis=1)
+train = train.drop(['lattice_angle_gamma_degree'], axis=1)
 
 cv_folds=3
 all_errs=[]
