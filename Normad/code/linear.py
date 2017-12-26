@@ -17,14 +17,17 @@ print("hello\n")
 train = pd.read_csv('../input/train.csv')
 test = pd.read_csv('../input/test.csv')
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 t1 = 'formation_energy_ev_natom'
 t2 = 'bandgap_energy_ev'
     
 def Linear_train(X_t, X_v, y1_t, y1_v, y2_t, y2_v, max_depth=3, n_trees=8, n_steps=1000, learn_rate=.1):
     np.random.seed(1)
-    print X_t.corr()
-
+    
+    
+    exit(1)
     clf=LinearRegression()
     y_t=np.concatenate((y1_t,y2_t), axis=1)
     y_v=np.concatenate((y1_v,y2_v), axis=1)
@@ -53,6 +56,15 @@ def Linear_train(X_t, X_v, y1_t, y1_v, y2_t, y2_v, max_depth=3, n_trees=8, n_ste
 
 def cross_validation(train, validation_part, cv_folds, learn_rate):
     # cv_folds=3
+    fig,ax = plt.subplots(2,1,figsize=(10,6))
+    ax1,ax2 = ax.flatten()
+    sns.distplot(train[t1],ax=ax1,bins=50,color='b')
+    sns.distplot(train[t2],ax=ax2,bins=50,color='r')
+    plt.show()
+    plt.figure(figsize=(14,8))
+    plt.scatter(train['formation_energy_ev_natom'],train['bandgap_energy_ev'],color=['r','b'])  
+    plt.show()
+    exit(0)
     my_loss=[]
     for i in range(cv_folds):
         X_train, X_validation = train_test_split(train, test_size=validation_part)
